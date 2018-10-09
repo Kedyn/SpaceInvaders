@@ -4,15 +4,16 @@ from pygame.sprite import Sprite
 
 
 class Alien(Sprite):
-    def __init__(self, screen, speed_factor=1, direction=1, type=1):
+    def __init__(self, screen, speed_factor=1, direction=1, alien_type=1):
         super().__init__()
         self.screen = screen
 
         self.speed_factor = speed_factor
         self.direction = direction
 
-        self.normal = pygame.image.load('images/alien_' + str(type) + '.png')
-        self.step = pygame.image.load('images/alien_' + str(type) +
+        self.normal = pygame.image.load('images/alien_' + str(alien_type) +
+                                        '.png')
+        self.step = pygame.image.load('images/alien_' + str(alien_type) +
                                       '_step.png')
 
         self.image = self.normal

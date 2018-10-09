@@ -24,9 +24,9 @@ class MenuScene(Scene):
                            "INVADERS")
 
         self.alien_one = Alien(director.screen)
-        self.alien_two = Alien(screen=director.screen, type=2)
-        self.alien_three = Alien(screen=director.screen, type=3)
-        self.alien_four = Alien(screen=director.screen, type=4)
+        self.alien_two = Alien(screen=director.screen, alien_type=2)
+        self.alien_three = Alien(screen=director.screen, alien_type=3)
+        self.alien_four = Alien(screen=director.screen, alien_type=4)
         self.ufo = UFO(director.screen)
 
         self.alien_one.rect.center = self.alien_two.rect.center = \

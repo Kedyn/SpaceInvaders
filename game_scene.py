@@ -1,9 +1,11 @@
 import pygame
+import random
 
 from scene import Scene
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
+from explosion import Explosion
 from pygame.sprite import Group
 
 
@@ -17,19 +19,26 @@ class GameScene(Scene):
 
         self.ship_bullets_allowed = 3
         self.ship_bullets = 0
+        self.ships = 3
 
         self.laser_sound = pygame.mixer.Sound('sounds/laser.ogg')
+        self.alein_explosion = pygame.mixer.Sound('sounds/alien_explosion.ogg')
+        self.ship_explosion = pygame.mixer.Sound('sounds/ship_explosion.ogg')
 
         self.bullets = Group()
         self.fleet = Group()
+        self.explosions = Group()
 
         self.fleet_drop_speed = 10
 
         self.level = 1
+        self.alien_speed = 0.2
         self.rows = 8
         self.cols = self.get_number_aliens_x()
 
         self.reset()
+
+        self.old_ticks = pygame.time.get_ticks()
 
     def get_number_aliens_x(self):
         alien = Alien(self.director.screen)
@@ -40,7 +49,8 @@ class GameScene(Scene):
         return number_aliens_x
 
     def create_alien(self, alien_number, row_number, alien_type):
-            alien = Alien(self.director.screen, type=alien_type)
+            alien = Alien(self.director.screen, alien_type=alien_type,
+                          speed_factor=self.alien_speed)
             alien_width = alien.rect.width
             alien.x = alien_width + 2 * alien_width * alien_number
             alien.rect.x = alien.x
@@ -60,7 +70,9 @@ class GameScene(Scene):
                 self.create_alien(alien_number, row_number, alien_type)
 
     def reset(self):
+        self.ships = 3
         self.ship_bullets = 0
+
         self.level = 1
 
         self.bullets.empty()
@@ -68,34 +80,56 @@ class GameScene(Scene):
 
         self.create_fleet()
 
-    def fire_ship_bullet(self):
-        if self.ship_bullets < self.ship_bullets_allowed:
-            new_bullet = Bullet(self.director.screen, self.ship.rect.centerx,
-                                self.ship.rect.top)
+    def fire_bullet(self, rect, bullet_type="ship"):
+        if bullet_type is "ship":
+            if self.ship_bullets < self.ship_bullets_allowed:
+                new_bullet = Bullet(self.director.screen, rect.centerx,
+                                    rect.top)
+
+                self.bullets.add(new_bullet)
+                self.laser_sound.play()
+
+                self.ship_bullets += 1
+        else:
+            new_bullet = Bullet(self.director.screen, rect.centerx,
+                                rect.top, (200, 0, 0), 1)
 
             self.bullets.add(new_bullet)
             self.laser_sound.play()
 
-            self.ship_bullets += 1
-
     def keydown(self, key):
-        if key == pygame.K_RIGHT:
+        if key == pygame.K_RIGHT or key == pygame.K_d:
             self.ship.moving_right = True
-        elif key == pygame.K_LEFT:
+        elif key == pygame.K_LEFT or key == pygame.K_a:
             self.ship.moving_left = True
         elif key == pygame.K_SPACE:
-            self.fire_ship_bullet()
+            self.fire_bullet(self.ship.rect)
 
     def keyup(self, key):
-        if key == pygame.K_RIGHT:
+        if key == pygame.K_RIGHT or key == pygame.K_d:
             self.ship.moving_right = False
-        elif key == pygame.K_LEFT:
+        elif key == pygame.K_LEFT or key == pygame.K_a:
             self.ship.moving_left = False
+
+    def create_explosion(self, center, type="alien"):
+        new_explosion = Explosion(self.director.screen, center)
+
+        self.explosions.add(new_explosion)
+
+        if type is "alien":
+            self.alein_explosion.play()
+        else:
+            self.ship_explosion.play()
 
     def change_fleet_direction(self):
         for alien in self.fleet.sprites():
             alien.direction *= -1
             alien.rect.y += self.fleet_drop_speed
+
+    def check_explosions(self):
+        for explosion in self.explosions.sprites():
+            if explosion.explosion is 8:
+                self.explosions.remove(explosion)
 
     def check_fleet_edges(self):
         for alien in self.fleet.sprites():
@@ -122,25 +156,47 @@ class GameScene(Scene):
                 else:
                     for alien in self.fleet.sprites():
                         if bullet.rect.colliderect(alien.rect):
+                            self.create_explosion(alien.rect.center)
                             self.fleet.remove(alien)
                             self.bullets.remove(bullet)
+
                             self.ship_bullets -= 1
+
+                            self.alein_explosion.play()
             else:
                 if bullet.rect.top >= screen_height:
                     self.bullets.remove(bullet)
+                elif bullet.rect.colliderect(self.ship.rect):
+                    self.create_explosion(self.ship.rect.center)
+                    self.bullets.remove(bullet)
+
+                    self.ship_explosion.play()
 
     def update(self):
+        self.check_explosions()
+        self.explosions.update()
+
         self.ship.update()
 
         self.check_fleet_edges()
         self.check_fleet_bottom()
         self.fleet.update()
 
+        if len(self.fleet.sprites()) > 0 and \
+                pygame.time.get_ticks() - self.old_ticks >= 10000 / self.level:
+            fleet = self.fleet.sprites()
+            self.fire_bullet(fleet[random.randint(0, len(fleet) - 1)].rect,
+                             "alien")
+            self.old_ticks = pygame.time.get_ticks()
+
         self.check_bullets()
         self.bullets.update()
 
     def render(self):
         self.director.screen.fill(self.background)
+
+        for explsion in self.explosions.sprites():
+            explsion.render()
 
         self.ship.render()
 
