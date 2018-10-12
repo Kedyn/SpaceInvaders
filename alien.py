@@ -10,6 +10,7 @@ class Alien(Sprite):
 
         self.speed_factor = speed_factor
         self.direction = direction
+        self.alien_type = alien_type
 
         self.normal = pygame.image.load('images/alien_' + str(alien_type) +
                                         '.png')

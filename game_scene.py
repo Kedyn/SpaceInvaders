@@ -6,6 +6,8 @@ from ship import Ship
 from bullet import Bullet
 from alien import Alien
 from explosion import Explosion
+from game_stats import GameStats
+from bunker import Bunker
 from pygame.sprite import Group
 
 
@@ -18,8 +20,6 @@ class GameScene(Scene):
         self.ship = Ship(director.screen)
 
         self.ship_bullets_allowed = 3
-        self.ship_bullets = 0
-        self.ships = 3
 
         self.laser_sound = pygame.mixer.Sound('sounds/laser.ogg')
         self.alein_explosion = pygame.mixer.Sound('sounds/alien_explosion.ogg')
@@ -28,17 +28,34 @@ class GameScene(Scene):
         self.bullets = Group()
         self.fleet = Group()
         self.explosions = Group()
+        self.bunkers = Group()
 
         self.fleet_drop_speed = 10
 
-        self.level = 1
-        self.alien_speed = 0.2
         self.rows = 8
         self.cols = self.get_number_aliens_x()
+
+        self.game_stats = GameStats(director)
 
         self.reset()
 
         self.old_ticks = pygame.time.get_ticks()
+
+    def reset(self):
+        self.game_stats.reset()
+
+        self.ship_bullets = 0
+
+        self.alien_speed = 0.2
+
+        self.number_of_bunkers = 5
+
+        self.bullets.empty()
+        self.fleet.empty()
+        self.bunkers.empty()
+
+        self.create_fleet()
+        self.create_bunkers()
 
     def get_number_aliens_x(self):
         alien = Alien(self.director.screen)
@@ -69,16 +86,16 @@ class GameScene(Scene):
             for alien_number in range(self.cols):
                 self.create_alien(alien_number, row_number, alien_type)
 
-    def reset(self):
-        self.ships = 3
-        self.ship_bullets = 0
+    def create_bunkers(self):
+        space = int((self.director.screen.get_rect().right -
+                    ((self.number_of_bunkers - 1) * 56)) /
+                    self.number_of_bunkers)
+        x = space
 
-        self.level = 1
+        for i in range(self.number_of_bunkers):
+            self.bunkers.add(Bunker(self.director.screen, x))
 
-        self.bullets.empty()
-        self.fleet.empty()
-
-        self.create_fleet()
+            x += space
 
     def fire_bullet(self, rect, bullet_type="ship"):
         if bullet_type is "ship":
@@ -111,12 +128,12 @@ class GameScene(Scene):
         elif key == pygame.K_LEFT or key == pygame.K_a:
             self.ship.moving_left = False
 
-    def create_explosion(self, center, type="alien"):
+    def create_explosion(self, center, character_type="alien"):
         new_explosion = Explosion(self.director.screen, center)
 
         self.explosions.add(new_explosion)
 
-        if type is "alien":
+        if character_type is "alien":
             self.alein_explosion.play()
         else:
             self.ship_explosion.play()
@@ -156,6 +173,7 @@ class GameScene(Scene):
                 else:
                     for alien in self.fleet.sprites():
                         if bullet.rect.colliderect(alien.rect):
+                            self.game_stats.score += alien.alien_type * 10
                             self.create_explosion(alien.rect.center)
                             self.fleet.remove(alien)
                             self.bullets.remove(bullet)
@@ -183,7 +201,8 @@ class GameScene(Scene):
         self.fleet.update()
 
         if len(self.fleet.sprites()) > 0 and \
-                pygame.time.get_ticks() - self.old_ticks >= 10000 / self.level:
+                pygame.time.get_ticks() - self.old_ticks >= \
+                10000 / self.game_stats.level:
             fleet = self.fleet.sprites()
             self.fire_bullet(fleet[random.randint(0, len(fleet) - 1)].rect,
                              "alien")
@@ -192,8 +211,12 @@ class GameScene(Scene):
         self.check_bullets()
         self.bullets.update()
 
+        self.game_stats.update()
+
     def render(self):
         self.director.screen.fill(self.background)
+
+        self.game_stats.render()
 
         for explsion in self.explosions.sprites():
             explsion.render()
@@ -205,3 +228,6 @@ class GameScene(Scene):
 
         for alien in self.fleet.sprites():
             alien.render()
+
+        for bunker in self.bunkers.sprites():
+            bunker.render()
