@@ -11,7 +11,7 @@ class Ship(Sprite):
         self.screen = screen
         self.speed_factor = speed_factor
 
-        self.image = pygame.image.load('images/ship.png')
+        self.image = pygame.image.load('assets/images/ship.png')
         self.rect = self.image.get_rect()
         self.screen_rect = screen.get_rect()
 
@@ -25,6 +25,8 @@ class Ship(Sprite):
 
     def reset(self):
         self.center = self.screen_rect.centerx
+        self.moving_right = False
+        self.moving_left = False
 
     def update(self):
         if self.moving_right and self.rect.right < self.screen_rect.right:

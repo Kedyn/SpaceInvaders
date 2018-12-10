@@ -12,7 +12,7 @@ class UFO(Sprite):
         self.speed_factor = speed_factor
         self.direction = direction
 
-        self.image = pygame.image.load('images/ufo.png')
+        self.image = pygame.image.load('assets/images/ufo.png')
         self.rect = self.image.get_rect()
 
         self.rect.x = self.rect.width
@@ -27,6 +27,7 @@ class UFO(Sprite):
             return True
         elif self.rect.left <= 0 - self.rect.width:
             return True
+        return False
 
     def update(self):
         self.x += (self.speed_factor * self.direction)

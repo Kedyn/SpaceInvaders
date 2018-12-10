@@ -5,6 +5,7 @@ from scene import Scene
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
+from ufo import UFO
 from explosion import Explosion
 from game_stats import GameStats
 from bunker import Bunker
@@ -21,9 +22,19 @@ class GameScene(Scene):
 
         self.ship_bullets_allowed = 3
 
-        self.laser_sound = pygame.mixer.Sound('sounds/laser.ogg')
-        self.alein_explosion = pygame.mixer.Sound('sounds/alien_explosion.ogg')
-        self.ship_explosion = pygame.mixer.Sound('sounds/ship_explosion.ogg')
+        self.laser_sound = pygame.mixer.Sound('assets/sounds/laser.ogg')
+        self.alein_explosion = pygame.mixer.Sound(
+            'assets/sounds/alien_explosion.ogg')
+        self.ship_explosion = pygame.mixer.Sound(
+            'assets/sounds/ship_explosion.ogg')
+        self.ufo_sound = pygame.mixer.Sound(
+            'assets/sounds/ufo.ogg')
+
+        self.background_sound = pygame.mixer.Sound(
+            'assets/sounds/background.ogg')
+
+        self.gg_sound = pygame.mixer.Sound(
+            'assets/sounds/game_over.ogg')
 
         self.bullets = Group()
         self.fleet = Group()
@@ -37,16 +48,22 @@ class GameScene(Scene):
 
         self.game_stats = GameStats(director)
 
-        self.reset()
-
         self.old_ticks = pygame.time.get_ticks()
 
-    def reset(self):
+        self.ufo_time = random.randint(15, 30) * 1000
+        self.ufo_ticks = pygame.time.get_ticks()
+
+        self.ufo = None
+
+    def exit(self):
+        self.game_stats.save_scores()
+
+    def reset(self, alien_speed=0.2):
         self.game_stats.reset()
 
         self.ship_bullets = 0
 
-        self.alien_speed = 0.2
+        self.alien_speed = alien_speed
 
         self.number_of_bunkers = 5
 
@@ -57,6 +74,17 @@ class GameScene(Scene):
         self.create_fleet()
         self.create_bunkers()
 
+        self.ship.reset()
+
+        self.game_stats.save_scores()
+
+        self.ufo_time = random.randint(15, 30) * 1000
+        self.ufo_ticks = pygame.time.get_ticks()
+
+        self.ufo = None
+
+        self.background_sound.play(-1)
+
     def get_number_aliens_x(self):
         alien = Alien(self.director.screen)
         available_space_x = self.director.screen.get_rect().width - 2 * \
@@ -66,14 +94,18 @@ class GameScene(Scene):
         return number_aliens_x
 
     def create_alien(self, alien_number, row_number, alien_type):
-            alien = Alien(self.director.screen, alien_type=alien_type,
-                          speed_factor=self.alien_speed)
-            alien_width = alien.rect.width
-            alien.x = alien_width + 2 * alien_width * alien_number
-            alien.rect.x = alien.x
-            alien.rect.y = alien.rect.height + 2 * alien.rect.height * \
-                row_number
-            self.fleet.add(alien)
+        alien = Alien(self.director.screen, alien_type=alien_type,
+                      speed_factor=self.alien_speed)
+
+        alien_width = alien.rect.width
+
+        alien.x = alien_width + 2 * alien_width * alien_number
+
+        alien.rect.x = alien.x
+        alien.rect.y = alien.rect.height + 2 * alien.rect.height * \
+            row_number
+
+        self.fleet.add(alien)
 
     def create_fleet(self):
         alien_type = 0
@@ -157,10 +189,8 @@ class GameScene(Scene):
     def check_fleet_bottom(self):
         screen_bottom = self.director.screen.get_rect().bottom
 
-        for alien in self.fleet.sprites():
-            if alien.rect.bottom is screen_bottom:
-                self.change_fleet_direction()
-                break
+        if self.fleet.sprites()[-1].rect.bottom > screen_bottom:
+            self.lose_ship()
 
     def check_bullets(self):
         screen_height = self.director.screen.get_rect().height
@@ -181,6 +211,25 @@ class GameScene(Scene):
                             self.ship_bullets -= 1
 
                             self.alein_explosion.play()
+                    if self.ufo is not None:
+                        if bullet.rect.colliderect(self.ufo.rect):
+                            self.game_stats.score += random.randint(1, 5) * \
+                                1000
+                            self.create_explosion(self.ufo.rect.center)
+                            self.ship_bullets -= 1
+                            self.alein_explosion.play()
+                            self.ufo = None
+                            self.ufo_sound.stop()
+                    for bunker in self.bunkers:
+                        if bunker.collide(bullet.rect):
+                            self.bullets.remove(bullet)
+
+                            self.ship_explosion.play()
+
+                            self.ship_bullets -= 1
+
+                            if not bunker.standing():
+                                self.bunkers.remove(bunker)
             else:
                 if bullet.rect.top >= screen_height:
                     self.bullets.remove(bullet)
@@ -190,7 +239,70 @@ class GameScene(Scene):
 
                     self.ship_explosion.play()
 
+                    self.lose_ship()
+
+                for bunker in self.bunkers:
+                    if bunker.collide(bullet.rect):
+                        self.bullets.remove(bullet)
+
+                        self.ship_explosion.play()
+
+                        if not bunker.standing():
+                            self.bunkers.remove(bunker)
+
+    def move_aliens_top(self):
+        alien = Alien(self.director.screen,
+                      alien_type=self.fleet.sprites()[0].alien_type)
+        top_y = alien.rect.height
+
+        prev_alien_y = self.fleet.sprites()[0].rect.y
+
+        for alien in self.fleet.sprites():
+            if (alien.rect.y > prev_alien_y):
+                top_y += 2 * alien.rect.height
+
+            prev_alien_y = alien.rect.y
+
+            alien.rect.y = top_y
+
+    def lose_ship(self):
+        if self.game_stats.ships_left > 0:
+            self.game_stats.ships_left -= 1
+
+            self.move_aliens_top()
+
+            self.ship.reset()
+        else:
+            self.gg_sound.play()
+
+            self.background_sound.stop()
+
+            self.director.set_scene("menu")
+
     def update(self):
+        if len(self.fleet.sprites()) == 0:
+            self.ufo_sound.stop()
+            self.background_sound.stop()
+            self.alien_speed += 0.2
+            self.reset(self.alien_speed)
+
+        if self.ufo is not None:
+            if self.ufo.check_edges():
+                self.ufo = None
+
+                self.ufo_sound.stop()
+
+                self.ufo_time = random.randint(15, 30) * 1000
+                self.ufo_ticks = pygame.time.get_ticks()
+            else:
+                self.ufo.update()
+        else:
+            if pygame.time.get_ticks() - self.ufo_ticks >= \
+                    self.ufo_time:
+                self.ufo = UFO(self.director.screen, self.alien_speed * 2)
+
+                self.ufo_sound.play(-1)
+
         self.check_explosions()
         self.explosions.update()
 
@@ -210,6 +322,19 @@ class GameScene(Scene):
 
         self.check_bullets()
         self.bullets.update()
+
+        if self.fleet.sprites()[-1].rect.bottom >= \
+                self.bunkers.sprites()[0].top_left_triangle_rect.top:
+            for alien in self.fleet.sprites():
+                for bunker in self.bunkers.sprites():
+                    if bunker.collide(alien.rect):
+                        self.create_explosion(alien.rect.center)
+                        self.fleet.remove(alien)
+
+                        self.alein_explosion.play()
+
+                        if not bunker.standing():
+                            self.bunkers.remove(bunker)
 
         self.game_stats.update()
 
@@ -231,3 +356,6 @@ class GameScene(Scene):
 
         for bunker in self.bunkers.sprites():
             bunker.render()
+
+        if self.ufo is not None:
+            self.ufo.render()

@@ -21,3 +21,6 @@ class Scene:
 
     def render(self):
         pass
+
+    def exit(self):
+        pass

@@ -1,6 +1,7 @@
 from director import Director
 from menu_scene import MenuScene
 from game_scene import GameScene
+from scores_scene import ScoresScene
 
 
 class Game:
@@ -9,7 +10,7 @@ class Game:
 
         self.menu_scene = MenuScene(self.director)
         self.game_scene = GameScene(self.director)
-        self.scores_scene = None
+        self.scores_scene = ScoresScene(self.director)
 
         self.director.scene_list = {
             "menu": self.menu_scene,

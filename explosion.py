@@ -11,13 +11,17 @@ class Explosion(Sprite):
         self.screen = screen
         self.speed = speed
 
-        self.explosion_one = pygame.image.load('images/explosion_1.png')
-        self.explosion_two = pygame.image.load('images/explosion_2.png')
-        self.explosion_three = pygame.image.load('images/explosion_3.png')
-        self.explosion_four = pygame.image.load('images/explosion_4.png')
-        self.explosion_five = pygame.image.load('images/explosion_5.png')
-        self.explosion_six = pygame.image.load('images/explosion_6.png')
-        self.explosion_seven = pygame.image.load('images/explosion_7.png')
+        self.explosion_one = pygame.image.load('assets/images/explosion_1.png')
+        self.explosion_two = pygame.image.load('assets/images/explosion_2.png')
+        self.explosion_three = pygame.image.load(
+            'assets/images/explosion_3.png')
+        self.explosion_four = pygame.image.load(
+            'assets/images/explosion_4.png')
+        self.explosion_five = pygame.image.load(
+            'assets/images/explosion_5.png')
+        self.explosion_six = pygame.image.load('assets/images/explosion_6.png')
+        self.explosion_seven = pygame.image.load(
+            'assets/images/explosion_7.png')
 
         self.image = self.explosion_one
         self.rect = self.image.get_rect()

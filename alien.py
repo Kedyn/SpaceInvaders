@@ -12,10 +12,10 @@ class Alien(Sprite):
         self.direction = direction
         self.alien_type = alien_type
 
-        self.normal = pygame.image.load('images/alien_' + str(alien_type) +
-                                        '.png')
-        self.step = pygame.image.load('images/alien_' + str(alien_type) +
-                                      '_step.png')
+        self.normal = pygame.image.load('assets/images/alien_' +
+                                        str(alien_type) + '.png')
+        self.step = pygame.image.load('assets/images/alien_' +
+                                      str(alien_type) + '_step.png')
 
         self.image = self.normal
 
@@ -35,6 +35,7 @@ class Alien(Sprite):
             return True
         elif self.rect.left <= 0:
             return True
+        return False
 
     def update(self):
         self.x += (self.speed_factor * self.direction)

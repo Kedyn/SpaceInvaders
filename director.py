@@ -10,9 +10,12 @@ class Director:
 
         pygame.display.set_caption(title)
 
-        self.scene_list = None
+        self.scene_list = {}
         self.scene = None
         self.quit = False
+
+        self.regular_text_color = (255, 255, 255)
+        self.special_text_color = (0, 180, 0)
 
     def loop(self):
         if self.scene is not None:
@@ -33,6 +36,9 @@ class Director:
                 pygame.display.flip()
 
             if self.quit:
+                for key, scene in self.scene_list.items():
+                    if scene:
+                        scene.exit()
                 sys.exit()
 
     def set_scene(self, scene_name):
