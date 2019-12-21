@@ -112,7 +112,7 @@ class GameScene(Scene):
         change_type = self.rows / 4
 
         for row_number in range(self.rows):
-            if int(row_number % change_type) is 0:
+            if int(row_number % change_type) == 0:
                 alien_type += 1
 
             for alien_number in range(self.cols):
@@ -120,7 +120,7 @@ class GameScene(Scene):
 
     def create_bunkers(self):
         space = int((self.director.screen.get_rect().right -
-                    ((self.number_of_bunkers - 1) * 56)) /
+                     ((self.number_of_bunkers - 1) * 56)) /
                     self.number_of_bunkers)
         x = space
 
@@ -130,7 +130,7 @@ class GameScene(Scene):
             x += space
 
     def fire_bullet(self, rect, bullet_type="ship"):
-        if bullet_type is "ship":
+        if bullet_type == "ship":
             if self.ship_bullets < self.ship_bullets_allowed:
                 new_bullet = Bullet(self.director.screen, rect.centerx,
                                     rect.top)
@@ -165,7 +165,7 @@ class GameScene(Scene):
 
         self.explosions.add(new_explosion)
 
-        if character_type is "alien":
+        if character_type == "alien":
             self.alein_explosion.play()
         else:
             self.ship_explosion.play()
@@ -177,7 +177,7 @@ class GameScene(Scene):
 
     def check_explosions(self):
         for explosion in self.explosions.sprites():
-            if explosion.explosion is 8:
+            if explosion.explosion == 8:
                 self.explosions.remove(explosion)
 
     def check_fleet_edges(self):
@@ -286,6 +286,8 @@ class GameScene(Scene):
             self.alien_speed += 0.2
             self.reset(self.alien_speed)
 
+            print(len(self.fleet.sprites()))
+
         if self.ufo is not None:
             if self.ufo.check_edges():
                 self.ufo = None
@@ -323,7 +325,8 @@ class GameScene(Scene):
         self.check_bullets()
         self.bullets.update()
 
-        if self.fleet.sprites()[-1].rect.bottom >= \
+        if len(self.fleet.sprites()) > 0 and \
+                self.fleet.sprites()[-1].rect.bottom >= \
                 self.bunkers.sprites()[0].top_left_triangle_rect.top:
             for alien in self.fleet.sprites():
                 for bunker in self.bunkers.sprites():
@@ -337,6 +340,10 @@ class GameScene(Scene):
                             self.bunkers.remove(bunker)
 
         self.game_stats.update()
+
+        if self.game_stats.ships == 0:
+            self.ufo_sound.stop()
+            self.background_sound.stop()
 
     def render(self):
         self.director.screen.fill(self.background)
